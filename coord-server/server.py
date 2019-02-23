@@ -6,6 +6,7 @@ import hashlib
 import threading
 import random, string
 import os, pwd, grp
+import re
 
 # From https://stackoverflow.com/questions/2699907/dropping-root-permissions-in-python
 # Need to start server as root for cert/privkey access, but don't want to stay root
@@ -78,8 +79,16 @@ class CoordServer(object):
   def updateHosts(self):
     try:
       while True:
-        data, addr = self.udpsock.recvfrom(1024)
-        print("Received message: " + data)
+        data, addr = self.udpsock.recvfrom(32)
+        data_bytes = bytearray(data.rstrip())
+
+        if len(data_byte) != 5:
+          print("Bad")
+        else:
+          id = str(data_bytes[0])
+          ip = ".".join(data_bytes[1:])
+          print("Received " + id + " and " + iplocate)
+      
     except Exception as e:
       print("Some issue: " + str(e))
       self.udpsock.close()

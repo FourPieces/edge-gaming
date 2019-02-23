@@ -29,13 +29,21 @@ def drop_privileges(uid_name='nobody', gid_name='nogroup'):
     old_umask = os.umask(077)
 
 class CoordServer(object):
-  def __init__(self, host, port):
+  def __init__(self, host, port, udpport):
     self.host = host
     self.port = port
+    self.udpport = udpport
+
+    # To listen for client connections
     self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     self.sock.bind((self.host, self.port))
     
+    # To listen for updates
+    self.udpsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    self.udpsock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    self.udpsock.bind((self.host, self.udpport))
+
     self.context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
     self.context.load_cert_chain(certfile=config.Config.certinfo()['cert'], keyfile=config.Config.certinfo()['key'])
     self.context.options |= ssl.OP_NO_TLSv1 | ssl.OP_NO_TLSv1_1
@@ -45,6 +53,10 @@ class CoordServer(object):
     self.cursor = self.cnx.cursor()
 
   def listen(self):
+    # Start the UDP server to listen for updates from streaming servers
+    threading.Thread(target = self.updateHosts).start()
+
+    # The main thread will listen for client connections
     self.sock.listen(5)
     
     try:
@@ -60,6 +72,17 @@ class CoordServer(object):
       self.cursor.close()
       self.cnx.close()
 
+  # UDP Socket thread listening for updates from streaming servers
+  def updateHosts(self):
+    try:
+      while True:
+        data, addr = self.udpsock.recvfrom(1024)
+        print("Received message: " + data)
+    except:
+      self.udpsock.close()
+
+  # Handles the initial connect from a client
+  # Display a menu that the client can use to navigate
   def displayMenu(self, conn, address):
     result = False			
     while not result:
@@ -85,6 +108,7 @@ class CoordServer(object):
     conn.shutdown(1)
     conn.close()
 
+  # Register a new client with username/password
   def processRegistration(self, conn, address):
     try:
       conn.send("Create a username: ")
@@ -99,6 +123,8 @@ class CoordServer(object):
 
       conn.send("Choose a password: ")
       client_pass = conn.recv(128).rstrip()
+
+      # Generate a random 10 character salt
       client_salt = "".join(random.SystemRandom().choice(string.printable) for _ in range(10))
       client_pass = hashlib.sha256(client_pass + client_salt).hexdigest().upper()
 
@@ -149,6 +175,6 @@ class CoordServer(object):
       return False
 
 if __name__ == "__main__":
-  cserver = CoordServer("", 44444)
+  cserver = CoordServer("", 44444, 44445)
   drop_privileges()
   cserver.listen()

@@ -82,7 +82,7 @@ class CoordServer(object):
         data, addr = self.udpsock.recvfrom(32)
         data_bytes = bytearray(data.rstrip())
 
-        if len(data_byte) != 5:
+        if len(data_bytes) != 5:
           print("Bad")
         else:
           id = str(data_bytes[0])

@@ -78,7 +78,11 @@ class CoordServer(object):
       while True:
         data, addr = self.udpsock.recvfrom(1024)
         print("Received message: " + data)
-    except:
+    except KeyboardInterrupt:
+      print("[!] UDP Keyboard Interrupted!")
+    except Exception as e:
+      print("Some issue: " + str(e))
+    finally:
       self.udpsock.close()
 
   # Handles the initial connect from a client

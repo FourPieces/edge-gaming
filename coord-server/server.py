@@ -54,7 +54,9 @@ class CoordServer(object):
 
   def listen(self):
     # Start the UDP server to listen for updates from streaming servers
-    threading.Thread(target = self.updateHosts).start()
+    udpthread = threading.Thread(target = self.updateHosts)
+    udpthread.daemon = True
+    udpthread.start()
 
     # The main thread will listen for client connections
     self.sock.listen(5)
@@ -78,11 +80,8 @@ class CoordServer(object):
       while True:
         data, addr = self.udpsock.recvfrom(1024)
         print("Received message: " + data)
-    except KeyboardInterrupt:
-      print("[!] UDP Keyboard Interrupted!")
     except Exception as e:
       print("Some issue: " + str(e))
-    finally:
       self.udpsock.close()
 
   # Handles the initial connect from a client

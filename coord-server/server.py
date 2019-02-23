@@ -86,7 +86,7 @@ class CoordServer(object):
           print("Bad")
         else:
           id = str(data_bytes[0])
-          ip = ".".join(data_bytes[1:])
+          ip = ".".join(str(x) for x in data_bytes[1:])
           print("Received " + id + " and " + iplocate)
       
     except Exception as e:

@@ -151,14 +151,13 @@ class CoordServer(AbstractServer):
     conn.close()
 
   def findClosestServer(self, client_host):
-    data = self.db_conn.query_all("SELECT ipaddr FROM edgeservers")
+    data = self.db_conn.query_all("SELECT ipaddr FROM edgeservers", None)
 
     closest_dist = sys.maxsize
     (clilat, clilon) = iplocate.get_location_latlon(client_host)
     res = "0.0.0.0"
 
     for addr in data:
-      print("Trying to find closest for " + addr["ipaddr"])
       (servlat, servlon) = iplocate.get_location_latlon(addr["ipaddr"])
       curr_dist = math.sqrt((servlat - clilat)**2 + (servlon - clilon)**2)
       

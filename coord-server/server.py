@@ -29,7 +29,7 @@ def drop_privileges(uid_name='nobody', gid_name='nogroup'):
   # Ensure a very conservative umask
   os.umask(0o77)
 
-class AbstractServer():
+class AbstractServer(object):
   def __init__(self, host, port, mydb, socket_type = socket.SOCK_STREAM):
     self.host = host
     self.port = port
@@ -45,7 +45,7 @@ class AbstractServer():
 
 class UpdateServer(AbstractServer):
   def __init__(self, host, port, mydb):
-    super().__init__(host, port, mydb, socket_type=socket.SOCK_DGRAM)
+    super(UpdateServer, self).__init__(host, port, mydb, socket_type=socket.SOCK_DGRAM)
 
   def listen(self):
     # Start the UDP server to listen for updates from streaming servers
@@ -94,7 +94,7 @@ class UpdateServer(AbstractServer):
     
 class CoordServer(AbstractServer):
   def __init__(self, host, port, mydb):
-    super().__init__(host, port, mydb)
+    super(CoordServer, self).__init__(host, port, mydb)
 
     self.context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
     self.context.load_cert_chain(certfile=custom_config.Config.certinfo()['cert'], keyfile=custom_config.Config.certinfo()['key'])

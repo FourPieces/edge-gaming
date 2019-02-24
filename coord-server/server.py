@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dbinterface import DatabaseInterface
-import config
+import custom_config
 import iplocate
 import socket, ssl
 import hashlib, hmac
@@ -91,14 +91,14 @@ class UpdateServer(AbstractServer):
     msg = data_bytes[:5]
     mac = data_bytes[5:]
 
-    return hmac.compare_digest(hmac.new(config.Config.hmacsecret(), msg, digestmod=hashlib.sha256).digest(), mac)
+    return hmac.compare_digest(hmac.new(custom_config.Config.hmacsecret(), msg, digestmod=hashlib.sha256).digest(), mac)
     
 class CoordServer(AbstractServer):
   def __init__(self, host, port, mydb):
     super().__init__(host, port, mydb)
 
     self.context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-    self.context.load_cert_chain(certfile=config.Config.certinfo()['cert'], keyfile=config.Config.certinfo()['key'])
+    self.context.load_cert_chain(certfile=custom_config.Config.certinfo()['cert'], keyfile=custom_config.Config.certinfo()['key'])
     self.context.options |= ssl.OP_NO_TLSv1 | ssl.OP_NO_TLSv1_1
     self.context.set_ciphers("EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EHD")
 

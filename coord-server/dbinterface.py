@@ -1,9 +1,9 @@
 import mysql.connector as mysqlc
-import config
+import custom_config
 
 class DatabaseInterface(object):
   def __init__(self):
-    self._cnx = mysqlc.connect(**config.Config.dbinfo())
+    self._cnx = mysqlc.connect(**custom_config.Config.dbinfo())
     self._cursor = self._cnx.cursor()
 
   def query(self, query, params):

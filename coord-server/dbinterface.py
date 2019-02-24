@@ -11,9 +11,7 @@ class DatabaseInterface(object):
 
   def query_one(self, query, params):
     self.query(query, params)
-    res = self._cursor.fetchone()
-    self._cursor.fetchall() # Clear the cursor
-    return res
+    return self._cursor.fetchone()
 
   def query_all(self, query, params):
     self.query(query, params)

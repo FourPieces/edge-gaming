@@ -44,6 +44,8 @@ class Config(object):
     # Certificate info for TLS
     CERT = '/path/to/cert.pem'
     KEY = '/path/to/key.pem'
+
+    HMACSECRET = "MySecret"
     
     @classmethod
     def dbinfo(cls):
@@ -64,4 +66,8 @@ class Config(object):
             'cert': cls.CERT,
             'key': cls.KEY
             }
+
+    @classmethod
+    def hmacsecret(cls):
+        return cls.HMACSECRET
     

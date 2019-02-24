@@ -2,7 +2,7 @@ import mysql.connector as mysqlc
 import config
 import iplocate
 import socket, ssl
-import hashlib
+import hashlib, hmac
 import threading
 import random, string
 import os, pwd, grp
@@ -27,7 +27,7 @@ def drop_privileges(uid_name='nobody', gid_name='nogroup'):
     os.setuid(running_uid)
 
     # Ensure a very conservative umask
-    old_umask = os.umask(077)
+    os.umask(0o77)
 
 class CoordServer(object):
   def __init__(self, host, port, udpport):
@@ -79,19 +79,40 @@ class CoordServer(object):
   def updateHosts(self):
     try:
       while True:
-        data, addr = self.udpsock.recvfrom(32)
+        data, addr = self.udpsock.recvfrom(64)
         data_bytes = bytearray(data.rstrip())
 
-        if len(data_bytes) != 5:
-          print("Bad")
-        else:
-          id = str(data_bytes[0])
-          ipstr = ".".join(str(x) for x in data_bytes[1:])
-          print("Received " + id + " and " + ipstr)
+        # 1 byte ID, 4 bytes IP, 32 bytes HMAC
+        if len(data_bytes) != 38:
+          print("Bad update received.")
+          continue
+        
+        idstr = str(data_bytes[0])
+        ipstr = ".".join(str(x) for x in data_bytes[1:5])
+        print("Received " + idstr + " and " + ipstr)
+
+        valid = self.validateHMAC(data_bytes)
+
+        if not valid:
+          print("Bad MAC received for update.")
+          continue
+
+        self.cursor.execute("UPDATE edgeservers SET ipaddr = %s WHERE userid = %s", (ipstr, idstr))
+        self.cnx.commit()
+
+        if self.cursor.rowcount > 1:
+          raise Exception("IP Address update caused update of more than one database entry!\nPlease try to fix it and restart the server.")
       
     except Exception as e:
       print("Some issue: " + str(e))
+      print("Closing update socket.")
       self.udpsock.close()
+
+  def validateHMAC(self, data_bytes):
+    msg = data_bytes[:5]
+    mac = data_bytes[5:]
+
+    return hmac.compare_digest(hmac.new(config.Config.hmacsecret(), msg, digestmod=hashlib.sha256).digest(), mac)
 
   # Handles the initial connect from a client
   # Display a menu that the client can use to navigate
@@ -110,10 +131,10 @@ class CoordServer(object):
         if not result:
           conn.send("Process failed, please try again.\n")
 
-      except ValueError as verr:
+      except ValueError:
         conn.send("Process failed, please try again.\n")
 
-      except Exception as ex:
+      except Exception:
         conn.close()
         return
       
@@ -147,7 +168,7 @@ class CoordServer(object):
       conn.send("Registered successfully. Please reconnect to login.\n")
       return True
 
-    except:
+    except Exception as e:
       print("ERROR: " + str(e))
       return False
 

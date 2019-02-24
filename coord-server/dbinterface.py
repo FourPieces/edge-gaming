@@ -19,6 +19,7 @@ class DatabaseInterface(object):
 
   def update(self, query, params):
     self.query(query, params)
+    self._cnx.commit()
     return self._cursor.rowcount
 
   def __del__(self):

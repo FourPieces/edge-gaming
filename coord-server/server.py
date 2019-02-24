@@ -79,6 +79,8 @@ class UpdateServer(AbstractServer):
 
         if num_updated > 1:
           raise Exception("Updated more than 1 entry.")
+        elif num_updated == 0:
+          print("No updates.")
           
       
     except Exception as e:

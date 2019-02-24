@@ -7,7 +7,7 @@ class UpdateClient(object):
   def __init__(self, host, port):
     self.host = host
     self.port = port
-    self.secretkey = bytes("MySecret")
+    self.secretkey = bytes(b"MySecret")
     self.id_num = bytes([123])
     self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
@@ -18,6 +18,7 @@ class UpdateClient(object):
         msg = self.id_num + my_ip
         signature = hmac.new(self.secretkey, msg, digestmod=hashlib.sha256).digest()
         self.sock.sendto(msg+signature, (self.host, self.port))
+        print("Sent my IP and signature")
 
         time.sleep(30)
     except:

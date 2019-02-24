@@ -61,7 +61,7 @@ class UpdateServer(AbstractServer):
         data_bytes = bytearray(data.rstrip())
 
         # 1 byte ID, 4 bytes IP, 32 bytes HMAC
-        if len(data_bytes) != 38:
+        if len(data_bytes) != 37:
           print("Bad update received.")
           continue
         

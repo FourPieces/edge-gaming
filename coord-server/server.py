@@ -1,4 +1,5 @@
-import mysql.connector as mysqlc
+from abc import ABC, abstractmethod
+from dbinterface import DatabaseInterface
 import config
 import iplocate
 import socket, ssl
@@ -11,47 +12,41 @@ import re
 # From https://stackoverflow.com/questions/2699907/dropping-root-permissions-in-python
 # Need to start server as root for cert/privkey access, but don't want to stay root
 def drop_privileges(uid_name='nobody', gid_name='nogroup'):
-    if os.getuid() != 0:
-        # We're not root so, like, whatever dude
-        return
+  if os.getuid() != 0:
+    # We're not root so, like, whatever dude
+      return
 
-    # Get the uid/gid from the name
-    running_uid = pwd.getpwnam(uid_name).pw_uid
-    running_gid = grp.getgrnam(gid_name).gr_gid
+  # Get the uid/gid from the name
+  running_uid = pwd.getpwnam(uid_name).pw_uid
+  running_gid = grp.getgrnam(gid_name).gr_gid
 
-    # Remove group privileges
-    os.setgroups([])
+  # Remove group privileges
+  os.setgroups([])
 
-    # Try setting the new uid/gid
-    os.setgid(running_gid)
-    os.setuid(running_uid)
+  # Try setting the new uid/gid
+  os.setgid(running_gid)
+  os.setuid(running_uid)
 
-    # Ensure a very conservative umask
-    os.umask(0o77)
+  # Ensure a very conservative umask
+  os.umask(0o77)
 
-class CoordServer(object):
-  def __init__(self, host, port, udpport):
+class AbstractServer(ABC):
+  def __init__(self, host, port, mydb, socket_type = socket.SOCK_STREAM):
     self.host = host
     self.port = port
-    self.udpport = udpport
+    self.db_conn = mydb
 
-    # To listen for client connections
     self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     self.sock.bind((self.host, self.port))
-    
-    # To listen for updates
-    self.udpsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    self.udpsock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    self.udpsock.bind((self.host, self.udpport))
 
-    self.context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-    self.context.load_cert_chain(certfile=config.Config.certinfo()['cert'], keyfile=config.Config.certinfo()['key'])
-    self.context.options |= ssl.OP_NO_TLSv1 | ssl.OP_NO_TLSv1_1
-    self.context.set_ciphers("EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EHD")
-        
-    self.cnx = mysqlc.connect(**config.Config.dbinfo())
-    self.cursor = self.cnx.cursor()
+  @abstractmethod
+  def listen(self):
+    pass
+
+class UpdateServer(AbstractServer):
+  def __init__(self, host, port, mydb):
+    super().__init__(host, port, mydb, socket_type=socket.SOCK_DGRAM)
 
   def listen(self):
     # Start the UDP server to listen for updates from streaming servers
@@ -59,6 +54,55 @@ class CoordServer(object):
     udpthread.daemon = True
     udpthread.start()
 
+  # UDP Socket thread listening for updates from streaming servers
+  def updateHosts(self):
+    try:
+      while True:
+        data, _ = self.sock.recvfrom(64)
+        data_bytes = bytearray(data.rstrip())
+
+        # 1 byte ID, 4 bytes IP, 32 bytes HMAC
+        if len(data_bytes) != 38:
+          print("Bad update received.")
+          continue
+        
+        idstr = str(int(data_bytes[0]))
+        ipstr = ".".join(str(int(x)) for x in data_bytes[1:5])
+        print("Received " + idstr + " and " + ipstr)
+
+        valid = self.validateHMAC(data_bytes)
+
+        if not valid:
+          print("Bad MAC received for update.")
+          continue
+
+        num_updated = self.db_conn.update("UPDATE edgeservers SET ipaddr = %s WHERE userid = %s", (ipstr, idstr))
+
+        if num_updated > 1:
+          raise Exception("Updated more than 1 entry.")
+          
+      
+    except Exception as e:
+      print("Some issue: " + str(e))
+      print("Closing update socket.")
+      self.sock.close()
+
+  def validateHMAC(self, data_bytes):
+    msg = data_bytes[:5]
+    mac = data_bytes[5:]
+
+    return hmac.compare_digest(hmac.new(config.Config.hmacsecret(), msg, digestmod=hashlib.sha256).digest(), mac)
+    
+class CoordServer(AbstractServer):
+  def __init__(self, host, port, mydb):
+    super().__init__(host, port, mydb)
+
+    self.context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+    self.context.load_cert_chain(certfile=config.Config.certinfo()['cert'], keyfile=config.Config.certinfo()['key'])
+    self.context.options |= ssl.OP_NO_TLSv1 | ssl.OP_NO_TLSv1_1
+    self.context.set_ciphers("EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EHD")
+
+  def listen(self):
     # The main thread will listen for client connections
     self.sock.listen(5)
     
@@ -71,48 +115,6 @@ class CoordServer(object):
     except KeyboardInterrupt:
       print("[!] Keyboard Interrupted!")
       self.sock.close()
-    finally:
-      self.cursor.close()
-      self.cnx.close()
-
-  # UDP Socket thread listening for updates from streaming servers
-  def updateHosts(self):
-    try:
-      while True:
-        data, addr = self.udpsock.recvfrom(64)
-        data_bytes = bytearray(data.rstrip())
-
-        # 1 byte ID, 4 bytes IP, 32 bytes HMAC
-        if len(data_bytes) != 38:
-          print("Bad update received.")
-          continue
-        
-        idstr = str(data_bytes[0])
-        ipstr = ".".join(str(x) for x in data_bytes[1:5])
-        print("Received " + idstr + " and " + ipstr)
-
-        valid = self.validateHMAC(data_bytes)
-
-        if not valid:
-          print("Bad MAC received for update.")
-          continue
-
-        self.cursor.execute("UPDATE edgeservers SET ipaddr = %s WHERE userid = %s", (ipstr, idstr))
-        self.cnx.commit()
-
-        if self.cursor.rowcount > 1:
-          raise Exception("IP Address update caused update of more than one database entry!\nPlease try to fix it and restart the server.")
-      
-    except Exception as e:
-      print("Some issue: " + str(e))
-      print("Closing update socket.")
-      self.udpsock.close()
-
-  def validateHMAC(self, data_bytes):
-    msg = data_bytes[:5]
-    mac = data_bytes[5:]
-
-    return hmac.compare_digest(hmac.new(config.Config.hmacsecret(), msg, digestmod=hashlib.sha256).digest(), mac)
 
   # Handles the initial connect from a client
   # Display a menu that the client can use to navigate
@@ -146,10 +148,8 @@ class CoordServer(object):
     try:
       conn.send("Create a username: ")
       client_user = conn.recv(32).rstrip()
-      self.cursor.execute("SELECT * FROM users WHERE username = %s", (client_user,))
+      data = self.db_conn.query_all("SELECT * FROM users WHERE username = %s", (client_user,))
 
-      data = self.cursor.fetchall()
-      
       if len(data) > 0:
         conn.send("Username already exists.\n")
         return False
@@ -161,9 +161,7 @@ class CoordServer(object):
       client_salt = "".join(random.SystemRandom().choice(string.printable) for _ in range(10))
       client_pass = hashlib.sha256(client_pass + client_salt).hexdigest().upper()
 
-      self.cursor.execute("INSERT INTO users VALUES (%s, %s, %s, %s)", (client_user, client_pass, client_salt, "100"))
-
-      self.cnx.commit()
+      self.db_conn.query("INSERT INTO users VALUES (%s, %s, %s, %s)", (client_user, client_pass, client_salt, "100"))
       
       conn.send("Registered successfully. Please reconnect to login.\n")
       return True
@@ -180,9 +178,7 @@ class CoordServer(object):
       conn.send("Enter password: ")
       client_pass = conn.recv(128).rstrip()
   
-      self.cursor.execute("SELECT passwordsalt FROM users WHERE username = %s", (client_user,))
-
-      data = self.cursor.fetchone()
+      data = self.db_conn.query_one("SELECT passwordsalt FROM users WHERE username = %s", (client_user,))
 
       if data is None:
         conn.send("Username or password is incorrect.\n")
@@ -191,10 +187,8 @@ class CoordServer(object):
       client_pass += data[0]
       client_pass = hashlib.sha256(client_pass).hexdigest().upper()
     
-      self.cursor.execute("SELECT hours FROM users WHERE username = %s AND passwordhash = %s", (client_user, client_pass))
+      data = self.db_conn.query_one("SELECT hours FROM users WHERE username = %s AND passwordhash = %s", (client_user, client_pass))
       
-      data = self.cursor.fetchone()
-
       if data is None:
         conn.send("Username or password is incorrect.\n")
         return False
@@ -208,6 +202,9 @@ class CoordServer(object):
       return False
 
 if __name__ == "__main__":
-  cserver = CoordServer("", 44444, 44445)
+  mydb = DatabaseInterface()
+  cserver = CoordServer("", 44444, mydb)
+  userver = UpdateServer("", 44445, mydb)
   drop_privileges()
+  userver.listen()
   cserver.listen()

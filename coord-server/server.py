@@ -35,7 +35,7 @@ class AbstractServer(object):
     self.port = port
     self.db_conn = mydb
 
-    self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    self.sock = socket.socket(socket.AF_INET, socket_type)
     self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     self.sock.bind((self.host, self.port))
 

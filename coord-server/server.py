@@ -160,12 +160,12 @@ class CoordServer(AbstractServer):
     res = "0.0.0.0"
 
     for addr in data:
-      (servlat, servlon) = iplocate.get_location_latlon(addr["ipaddr"])
+      (servlat, servlon) = iplocate.get_location_latlon(addr[0])
       curr_dist = math.sqrt((servlat - clilat)**2 + (servlon - clilon)**2)
       
       if curr_dist < closest_dist:
         closest_dist = curr_dist
-        res = addr["ipaddr"]
+        res = addr[0]
 
       time.sleep(0.5)
 

@@ -162,7 +162,7 @@ class CoordServer(AbstractServer):
       client_salt = "".join(random.SystemRandom().choice(string.printable) for _ in range(10))
       client_pass = hashlib.sha256(client_pass + client_salt).hexdigest().upper()
 
-      self.db_conn.query("INSERT INTO users VALUES (%s, %s, %s, %s)", (client_user, client_pass, client_salt, "100"))
+      self.db_conn.update("INSERT INTO users VALUES (%s, %s, %s, %s)", (client_user, client_pass, client_salt, "100"))
       
       conn.send("Registered successfully. Please reconnect to login.\n")
       return True

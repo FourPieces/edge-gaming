@@ -1,4 +1,3 @@
-from abc import ABCMeta, abstractmethod
 from dbinterface import DatabaseInterface
 import custom_config
 import iplocate
@@ -30,7 +29,7 @@ def drop_privileges(uid_name='nobody', gid_name='nogroup'):
   # Ensure a very conservative umask
   os.umask(0o77)
 
-class AbstractServer(ABCMeta):
+class AbstractServer():
   def __init__(self, host, port, mydb, socket_type = socket.SOCK_STREAM):
     self.host = host
     self.port = port
@@ -40,7 +39,7 @@ class AbstractServer(ABCMeta):
     self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     self.sock.bind((self.host, self.port))
 
-  @abstractmethod
+  # Abstract method
   def listen(self):
     pass
 

@@ -143,7 +143,9 @@ class CoordServer(AbstractServer):
       except ValueError:
         conn.send("Process failed, please try again.\n")
 
-      except Exception:
+      except Exception as e:
+        print("Exception: " + str(e))
+        print("Closing client connection.")
         conn.close()
         return
       

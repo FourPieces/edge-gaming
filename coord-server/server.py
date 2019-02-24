@@ -4,9 +4,11 @@ import iplocate
 import socket, ssl
 import hashlib, hmac
 import threading
-import random, string
+import math
+import random
+import string
 import os, pwd, grp
-import re
+import sys
 
 # From https://stackoverflow.com/questions/2699907/dropping-root-permissions-in-python
 # Need to start server as root for cert/privkey access, but don't want to stay root
@@ -133,6 +135,9 @@ class CoordServer(AbstractServer):
 
         if not result:
           conn.send("Process failed, please try again.\n")
+        else:
+          closest = self.findClosestServer(address[0])
+          conn.send("Success. The closest server ready to play is: " + closest + "\n")
 
       except ValueError:
         conn.send("Process failed, please try again.\n")
@@ -143,6 +148,23 @@ class CoordServer(AbstractServer):
       
     conn.shutdown(1)
     conn.close()
+
+  def findClosestServer(self, client_host):
+    data = self.db_conn.query_all("SELECT ipaddr FROM edgeservers")
+
+    closest_dist = sys.maxsize
+    (clilat, clilon) = iplocate.get_location_latlon(client_host)
+    res = "0.0.0.0"
+
+    for addr in data:
+      (servlat, servlon) = iplocate.get_location_latlon(addr["ipaddr"])
+      curr_dist = math.sqrt((servlat - clilat)**2 + (servlon - clilon)**2)
+      
+      if curr_dist < closest_dist:
+        closest_dist = curr_dist
+        res = addr["ipaddr"]
+
+    return res
 
   # Register a new client with username/password
   def processRegistration(self, conn, address):

@@ -17,3 +17,11 @@ def get_location_str(ip_addr):
 
   except:
     return "Location not found."
+
+def get_location_latlon(ip_addr):
+  loc = get_location(ip_addr)
+
+  try:
+    return (loc['lat'], loc['lon'])
+  except:
+    return (0, 0)

@@ -9,6 +9,7 @@ import random
 import string
 import os, pwd, grp
 import sys
+import time
 
 # From https://stackoverflow.com/questions/2699907/dropping-root-permissions-in-python
 # Need to start server as root for cert/privkey access, but don't want to stay root
@@ -157,12 +158,15 @@ class CoordServer(AbstractServer):
     res = "0.0.0.0"
 
     for addr in data:
+      print("Trying to find closest for " + addr["ipaddr"])
       (servlat, servlon) = iplocate.get_location_latlon(addr["ipaddr"])
       curr_dist = math.sqrt((servlat - clilat)**2 + (servlon - clilon)**2)
       
       if curr_dist < closest_dist:
         closest_dist = curr_dist
         res = addr["ipaddr"]
+
+      time.sleep(0.5)
 
     return res
 

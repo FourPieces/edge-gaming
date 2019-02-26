@@ -164,6 +164,7 @@ class CoordServer(AbstractServer):
     try:
       edgechecksock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
       edgechecksock.bind((self.host, 55555))
+      edgechecksock.settimeout(5)
 
       for closest in closest_list:
         msg = client_ip + " OK?"
@@ -171,11 +172,8 @@ class CoordServer(AbstractServer):
         edgechecksock.send(msg)
         response = edgechecksock.recv(16)
         edgechecksock.close()
-
-        if response == "OK":
-          return closest
-        else:
-          print(response)
+          
+        return closest
 
     except Exception as e:
       print("Something went wrong: " + str(e))

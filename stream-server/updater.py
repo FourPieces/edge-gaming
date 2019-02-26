@@ -14,7 +14,7 @@ class UpdateClient(object):
   def doUpdates(self):
     try:
       while True:
-        my_ip = bytes(map(int, socket.gethostbyname(socket.getfqdn()).split(".")))
+        my_ip = bytes(map(int, self.get_ip().split(".")))
         msg = self.id_num + my_ip
         signature = hmac.new(self.secretkey, msg, digestmod=hashlib.sha256).digest()
         self.sock.sendto(msg+signature, (self.host, self.port))
@@ -23,6 +23,19 @@ class UpdateClient(object):
         time.sleep(30)
     except:
       print("Exitting.")
+
+  # From https://stackoverflow.com/questions/166506/finding-local-ip-addresses-using-pythons-stdlib
+  def get_ip(self):
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        # doesn't even have to be reachable
+        s.connect(('10.255.255.255', 1))
+        IP = s.getsockname()[0]
+    except:
+        IP = '127.0.0.1'
+    finally:
+        s.close()
+    return IP
 
 class ListenServer(object):
   def __init__(self, host, port):
@@ -39,15 +52,19 @@ class ListenServer(object):
 
       while True:
         client, _ = self.sock.accept()
-        data, _ = client.recv(64)
+        try:
+          data = str(client.recv(64))
+          print(data)
 
-        if len(data.split()) > 1 and data.split()[1] == "OK?":
-          client.send("OK")
-        else:
-          print("Wow bad")
+          if len(data.split()) > 1:
+            client.send("OK")
+          else:
+            print("Wow bad")
 
-        client.shutdown(1)
-        client.close()
+          client.shutdown(1)
+        
+        except:
+          client.close()
 
     except Exception as e:
       self.sock.close()

@@ -169,8 +169,11 @@ class CoordServer(AbstractServer):
       for closest in closest_list:
         msg = client_ip + " OK?"
         edgechecksock.sendto(msg, (closest[0], 55555))
-        response, addr = edgechecksock.recvfrom(16)
-          
+        response, _ = edgechecksock.recvfrom(16)
+        
+        if str(response) == "OK":
+          print("OK received!")
+
         return closest[0]
 
     except Exception as e:

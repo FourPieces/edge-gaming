@@ -50,7 +50,8 @@ class ListenServer(object):
     # Start the UDP server to listen for updates from streaming servers
     try:
       while True:
-        data, addr = str(self.sock.recvfrom(64))
+        data, addr = self.sock.recvfrom(64)
+        data = str(data)
         print(data)
 
         if len(data.split()) > 1:
@@ -62,10 +63,6 @@ class ListenServer(object):
     except Exception as e:
       print(str(e))
       self.sock.close()
-
-    except Exception as e:
-      self.sock.close()
-      print("Exception: " + str(e))
 
 
 if __name__ == "__main__":

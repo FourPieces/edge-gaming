@@ -167,14 +167,11 @@ class CoordServer(AbstractServer):
       edgechecksock.settimeout(5)
 
       for closest in closest_list:
-        msg = client_ip + " OK?"
-        edgechecksock.sendto(msg, (closest[0], 55555))
+        edgechecksock.sendto(b"STREAMREQ", (closest[0], 55555))
         response, _ = edgechecksock.recvfrom(16)
         
         if str(response) == "OK":
-          print("OK received!")
-
-        return closest[0]
+          return closest[0]
 
     except Exception as e:
       print("Something went wrong: " + str(e))

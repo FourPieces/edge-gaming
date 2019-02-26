@@ -54,7 +54,7 @@ class ListenServer(object):
         data = str(data)
         print(data)
 
-        if len(data.split()) > 1:
+        if data == "STREAMREQ":
           self.sock.sendto(b"OK", addr)
           subprocess.Popen(['C:\\Users\\Husky\\Desktop\\cs293b-3\\gaminganywhere-0.8.0\\bin\\ga-server-event-driven', 'C:\\Users\\Husky\\Desktop\\cs293b-3\\gaminganywhere-0.8.0\\bin\\config\\server.stardew.conf'])
         else:

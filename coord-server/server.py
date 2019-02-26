@@ -169,15 +169,17 @@ class CoordServer(AbstractServer):
         msg = client_ip + " OK?"
         edgechecksock.connect((closest[0], 55555))
         edgechecksock.send(msg)
-        response = edgechecksock.recvfrom(16).rstrip()
+        response = edgechecksock.recv(16)
         edgechecksock.close()
 
         if response == "OK":
           return closest
+        else:
+          print(response)
 
     except Exception as e:
       print("Something went wrong: " + str(e))
-      
+
     return None
 
   # Obtain a list of servers that have been updated semi-recently

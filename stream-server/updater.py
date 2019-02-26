@@ -38,8 +38,8 @@ class ListenServer(object):
       self.sock.listen(1)
 
       while True:
-        client, addr = self.sock.accept()
-        data, addr = client.recv(64)
+        client, _ = self.sock.accept()
+        data, _ = client.recv(64)
 
         if len(data.split()) > 1 and data.split()[1] == "OK?":
           client.send("OK")

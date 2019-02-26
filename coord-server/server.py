@@ -101,9 +101,6 @@ class CoordServer(AbstractServer):
   def __init__(self, host, port, mydb):
     super(CoordServer, self).__init__(host, port, mydb)
 
-    self.edgechecksock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    self.edgechecksock.settimeout(5.0)
-
     self.context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
     self.context.load_cert_chain(certfile=custom_config.Config.certinfo()['cert'], keyfile=custom_config.Config.certinfo()['key'])
     self.context.options |= ssl.OP_NO_TLSv1 | ssl.OP_NO_TLSv1_1
@@ -162,14 +159,25 @@ class CoordServer(AbstractServer):
   # Once we have a list of servers, ping them all in order
   # until one is found that's ready to accept a gaming connection
   def findClosestAvailable(self, client_ip, closest_list):
-    for closest in closest_list:
-      msg = client_ip + " OK?"
-      self.edgechecksock.sendto(msg, (closest[0], 55555))
-      response = self.edgechecksock.recvfrom(16).rstrip()
+    edgechecksock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-      if response == "OK":
-        return closest
+    try:
+      edgechecksock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+      edgechecksock.bind((self.host, 55555))
 
+      for closest in closest_list:
+        msg = client_ip + " OK?"
+        edgechecksock.connect((closest[0], 55555))
+        edgechecksock.send(msg)
+        response = edgechecksock.recvfrom(16).rstrip()
+        edgechecksock.close()
+
+        if response == "OK":
+          return closest
+
+    except Exception as e:
+      print("Something went wrong: " + str(e))
+      
     return None
 
   # Obtain a list of servers that have been updated semi-recently

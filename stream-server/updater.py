@@ -2,6 +2,7 @@ import socket
 import hashlib, hmac
 import threading
 import time
+import subprocess
 
 class UpdateClient(object):
   def __init__(self, host, port):
@@ -41,30 +42,26 @@ class ListenServer(object):
   def __init__(self, host, port):
     self.host = host
     self.port = port
-    self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     self.sock.bind((self.host, self.port))
 
   def listen(self):
     # Start the UDP server to listen for updates from streaming servers
     try:
-      self.sock.listen(1)
-
       while True:
-        client, _ = self.sock.accept()
-        try:
-          data = str(client.recv(64))
-          print(data)
+        data, addr = str(self.sock.recvfrom(64))
+        print(data)
 
-          if len(data.split()) > 1:
-            client.send("OK")
-          else:
-            print("Wow bad")
-
-          client.shutdown(1)
+        if len(data.split()) > 1:
+          self.sock.sendto(b"OK", addr)
+          subprocess.Popen(['C:\\Users\\Husky\\Desktop\\cs293b-3\\gaminganywhere-0.8.0\\bin\\ga-server-event-driven', 'C:\\Users\\Husky\\Desktop\\cs293b-3\\gaminganywhere-0.8.0\\bin\\config\\server.stardew.conf'])
+        else:
+          print("Wow bad")
         
-        except:
-          client.close()
+    except Exception as e:
+      print(str(e))
+      self.sock.close()
 
     except Exception as e:
       self.sock.close()

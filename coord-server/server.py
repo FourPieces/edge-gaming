@@ -159,7 +159,7 @@ class CoordServer(AbstractServer):
   # Once we have a list of servers, ping them all in order
   # until one is found that's ready to accept a gaming connection
   def findClosestAvailable(self, client_ip, closest_list):
-    edgechecksock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    edgechecksock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
     try:
       edgechecksock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -168,15 +168,14 @@ class CoordServer(AbstractServer):
 
       for closest in closest_list:
         msg = client_ip + " OK?"
-        edgechecksock.connect((closest[0], 55555))
-        edgechecksock.send(msg)
-        response = edgechecksock.recv(16)
-        edgechecksock.close()
+        edgechecksock.sendto(msg, (closest[0], 55555))
+        response, addr = edgechecksock.recvfrom(16)
           
         return closest[0]
 
     except Exception as e:
       print("Something went wrong: " + str(e))
+      edgechecksock.close()
 
     return None
 

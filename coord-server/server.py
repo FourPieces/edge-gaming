@@ -167,7 +167,7 @@ class CoordServer(AbstractServer):
       edgechecksock.settimeout(5)
 
       for closest in closest_list:
-        edgechecksock.sendto(b"STREAMREQ", (closest[0], 55555))
+        edgechecksock.sendto(b"STREAMOK?", (closest[0], 55555))
         response, _ = edgechecksock.recvfrom(16)
         
         if str(response) == "OK":

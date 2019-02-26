@@ -3,6 +3,8 @@ import hashlib, hmac
 import threading
 import time
 import subprocess
+import re
+import os, signal
 
 class UpdateClient(object):
   def __init__(self, host, port):
@@ -46,17 +48,37 @@ class ListenServer(object):
     self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     self.sock.bind((self.host, self.port))
 
+    self.currently_playing = False
+    self.game_pid = -1
+
   def listen(self):
     # Start the UDP server to listen for updates from streaming servers
     try:
       while True:
-        data, addr = self.sock.recvfrom(64)
-        data = str(data)
-        print(data)
+        data, addr = self.sock.recvfrom(16)
 
-        if data == "STREAMREQ":
-          self.sock.sendto(b"OK", addr)
-          subprocess.Popen(['C:\\Users\\Husky\\Desktop\\cs293b-3\\gaminganywhere-0.8.0\\bin\\ga-server-event-driven', 'C:\\Users\\Husky\\Desktop\\cs293b-3\\gaminganywhere-0.8.0\\bin\\config\\server.stardew.conf'])
+        if data == bytes(b"STREAMOK?"):
+          if not self.currently_playing:
+            self.sock.sendto(b"OK", addr)
+          else:
+            self.sock.sendto(b"NO", addr)
+        elif data == bytes(b"STREAMREQ"):
+          # Change this to point to your own gaming-anywhere server and configuration file
+          game = subprocess.Popen(['C:\\Users\\Husky\\Desktop\\cs293b-3\\gaminganywhere-0.8.0\\bin\\ga-server-event-driven',
+                                   'C:\\Users\\Husky\\Desktop\\cs293b-3\\gaminganywhere-0.8.0\\bin\\config\\server.stardew.conf'],
+                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+          game.wait()
+          _, err = game.communicate()
+          err = re.findall(r"pid=(\d{5})", str(err))
+          if len(err) > 0:
+            self.game_pid = int(err[0])
+            print("Game PID: " + err[0])
+            self.currently_playing = True
+        elif data == bytes(b"STREAMEND"):
+          if self.currently_playing and self.game_pid > 1024:
+            self.currently_playing = False
+            os.kill(self.game_pid, signal.SIGTERM)
+            self.game_pid = -1
         else:
           print("Wow bad")
         
@@ -66,8 +88,6 @@ class ListenServer(object):
 
 
 if __name__ == "__main__":
-  in_use = False
-
   uc = UpdateClient("azzy.org", 44445)
   ls = ListenServer("", 55555)
 

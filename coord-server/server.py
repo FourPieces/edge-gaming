@@ -140,10 +140,12 @@ class CoordServer(AbstractServer):
         if not result:
           conn.send("Process failed, please try again.\n")
         else:
-          closest = self.findClosestServer(address[0])
-          # TODO: Loop through the "closest" list and send pings to each one until
-          # You manage to find one who's ready to play.
-          conn.send("Success. The closest server ready to play is: " + closest[0] + "\n")
+          closest_list = self.findClosestServers(address[0])
+          closest = self.findClosestAvailable(address[0], closest_list)
+          if closest is not None:
+            conn.send("Success. The closest server ready to play is: " + closest + "\n")
+          else:
+            conn.send("All edge servers are currently busy.")
 
       except ValueError:
         conn.send("Process failed, please try again.\n")
@@ -157,7 +159,22 @@ class CoordServer(AbstractServer):
     conn.shutdown(1)
     conn.close()
 
-  def findClosestServer(self, client_host):
+  # Once we have a list of servers, ping them all in order
+  # until one is found that's ready to accept a gaming connection
+  def findClosestAvailable(self, client_ip, closest_list):
+    for closest in closest_list:
+      msg = client_ip + " OK?"
+      self.edgechecksock.sendto(msg, (closest[0], 55555))
+      response = self.edgechecksock.recvfrom(16).rstrip()
+
+      if response == "OK":
+        return closest
+
+    return None
+
+  # Obtain a list of servers that have been updated semi-recently
+  # Sorted by distance away from the client
+  def findClosestServers(self, client_host):
     data = self.db_conn.query_all("SELECT ipaddr FROM edgeservers", None)
 
     (clilat, clilon) = iplocate.get_location_latlon(client_host)

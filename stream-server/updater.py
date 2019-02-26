@@ -24,6 +24,36 @@ class UpdateClient(object):
     except:
       print("Exitting.")
 
+class ListenServer(object):
+  def __init__(self, host, port):
+    self.host = host
+    self.port = port
+    self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    self.sock.bind((self.host, self.port))
+
+  def listen(self):
+    # Start the UDP server to listen for updates from streaming servers
+    try:
+      while True:
+        data, addr = self.sock.recvfrom(64)
+
+        if len(data.split()) > 1 and data.split()[1] == "OK?":
+          self.sock.sendto("OK", addr)
+    except:
+      self.sock.close()
+
+
 if __name__ == "__main__":
+  in_use = False
+
   uc = UpdateClient("azzy.org", 44445)
-  uc.doUpdates()
+  ls = ListenServer("", 55555)
+
+  updateThread = threading.Thread(target = uc.doUpdates)
+  updateThread.daemon = True
+  updateThread.start()
+
+  listenThread = threading.Thread(target = ls.listen())
+  listenThread.daemon = True
+  listenThread.start()

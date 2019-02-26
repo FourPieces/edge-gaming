@@ -173,7 +173,7 @@ class CoordServer(AbstractServer):
         response = edgechecksock.recv(16)
         edgechecksock.close()
           
-        return closest
+        return closest[0]
 
     except Exception as e:
       print("Something went wrong: " + str(e))

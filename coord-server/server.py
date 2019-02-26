@@ -101,6 +101,9 @@ class CoordServer(AbstractServer):
   def __init__(self, host, port, mydb):
     super(CoordServer, self).__init__(host, port, mydb)
 
+    self.edgechecksock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    self.edgechecksock.settimeout(5.0)
+
     self.context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
     self.context.load_cert_chain(certfile=custom_config.Config.certinfo()['cert'], keyfile=custom_config.Config.certinfo()['key'])
     self.context.options |= ssl.OP_NO_TLSv1 | ssl.OP_NO_TLSv1_1
@@ -138,7 +141,9 @@ class CoordServer(AbstractServer):
           conn.send("Process failed, please try again.\n")
         else:
           closest = self.findClosestServer(address[0])
-          conn.send("Success. The closest server ready to play is: " + closest + "\n")
+          # TODO: Loop through the "closest" list and send pings to each one until
+          # You manage to find one who's ready to play.
+          conn.send("Success. The closest server ready to play is: " + closest[0] + "\n")
 
       except ValueError:
         conn.send("Process failed, please try again.\n")
@@ -155,20 +160,18 @@ class CoordServer(AbstractServer):
   def findClosestServer(self, client_host):
     data = self.db_conn.query_all("SELECT ipaddr FROM edgeservers", None)
 
-    closest_dist = sys.maxsize
     (clilat, clilon) = iplocate.get_location_latlon(client_host)
-    res = "0.0.0.0"
+    res = []
 
     for addr in data:
       (servlat, servlon) = iplocate.get_location_latlon(addr[0])
       curr_dist = math.sqrt((servlat - clilat)**2 + (servlon - clilon)**2)
-      
-      if curr_dist < closest_dist:
-        closest_dist = curr_dist
-        res = addr[0]
+      res.append((addr[0], curr_dist))
 
       time.sleep(0.5)
 
+    # Sort by distance in ascending order
+    res.sort(key = lambda tup: tup[1])
     return res
 
   # Register a new client with username/password

@@ -63,17 +63,21 @@ class ListenServer(object):
           else:
             self.sock.sendto(b"NO", addr)
         elif data == bytes(b"STREAMREQ"):
+          if not self.currently_playing:
           # Change this to point to your own gaming-anywhere server and configuration file
-          game = subprocess.Popen(['C:\\Users\\Husky\\Desktop\\cs293b-3\\gaminganywhere-0.8.0\\bin\\ga-server-event-driven',
-                                   'C:\\Users\\Husky\\Desktop\\cs293b-3\\gaminganywhere-0.8.0\\bin\\config\\server.stardew.conf'],
-                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-          game.wait()
-          _, err = game.communicate()
-          err = re.findall(r"pid=(\d{5})", str(err))
-          if len(err) > 0:
-            self.game_pid = int(err[0])
-            print("Game PID: " + err[0])
-            self.currently_playing = True
+            game = subprocess.Popen(['C:\\Users\\Husky\\Desktop\\cs293b-3\\gaminganywhere-0.8.0\\bin\\ga-server-event-driven',
+                                    'C:\\Users\\Husky\\Desktop\\cs293b-3\\gaminganywhere-0.8.0\\bin\\config\\server.stardew.conf'],
+                                    stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            game.wait()
+            _, err = game.communicate()
+            err = re.findall(r"pid=(\d{5})", str(err))
+            if len(err) > 0:
+              self.game_pid = int(err[0])
+              print("Game PID: " + err[0])
+              self.currently_playing = True
+              self.sock.sendto(b"OK", addr)
+          else:
+            self.sock.sendto(b"NO", addr)
         elif data == bytes(b"STREAMEND"):
           if self.currently_playing and self.game_pid > 1024:
             self.currently_playing = False

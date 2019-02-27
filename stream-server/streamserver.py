@@ -5,6 +5,7 @@ import time
 import subprocess
 import re
 import os, signal
+import sys
 
 class UpdateClient(object):
   def __init__(self, host, port):
@@ -64,13 +65,13 @@ class ListenServer(object):
             self.sock.sendto(b"NO", addr)
         elif data == bytes(b"STREAMREQ"):
           if not self.currently_playing:
-          # Change this to point to your own gaming-anywhere server and configuration file
-            game = subprocess.Popen(['.\\gaminganywhere-0.8.0\\bin\\ga-server-event-driven',
-                                    '.\\gaminganywhere-0.8.0\\bin\\config\\server.stardew.conf'],
+            curr_dir = os.path.abspath(os.path.dirname(sys.argv[0]))
+            game = subprocess.Popen([curr_dir + '/gaminganywhere-0.8.0/bin/ga-server-event-driven',
+                                    curr_dir + '/gaminganywhere-0.8.0/bin/config/server.stardew.conf'],
                                     stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             game.wait()
             _, err = game.communicate()
-            ferr = re.findall(r"pid=(\d{5})", str(err))
+            ferr = re.findall(r"pid=(\d{4,5})", str(err))
             if len(ferr) > 0:
               self.game_pid = int(ferr[0])
               print("Game PID: " + ferr[0])

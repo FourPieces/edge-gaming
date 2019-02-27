@@ -65,8 +65,8 @@ class ListenServer(object):
         elif data == bytes(b"STREAMREQ"):
           if not self.currently_playing:
           # Change this to point to your own gaming-anywhere server and configuration file
-            game = subprocess.Popen(['C:\\Users\\Husky\\Desktop\\cs293b-3\\gaminganywhere-0.8.0\\bin\\ga-server-event-driven',
-                                    'C:\\Users\\Husky\\Desktop\\cs293b-3\\gaminganywhere-0.8.0\\bin\\config\\server.stardew.conf'],
+            game = subprocess.Popen(['.\\gaminganywhere-0.8.0\\bin\\ga-server-event-driven',
+                                    '.\\gaminganywhere-0.8.0\\bin\\config\\server.stardew.conf'],
                                     stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             game.wait()
             _, err = game.communicate()

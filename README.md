@@ -3,6 +3,13 @@ Project for CS293B - Bringing video game streaming to the edge.
 
 Coordinating server runs in cloud, manages authentication/which edge devices are available.
 
+## Requirements
+Before running the project, three components are required:
+  1. A device running Windows 7 or later, to act as the edge device,
+  2. A VM in a public or private cloud, to act as the coordinating server,
+  3. A device running Windows 7 or later, or Linux, for which to stream the games to.
+
+The edge device must also have installed on it the game you wish to play. An extension of this project could allow authorized games to be downloaded from an S3 bucket if the user selects an edge device that does not have the games available.
 
 ## Starting the Coordinating Server
 Before running your server, you should fill out `config.py` as appropriate, and rename it to "custom_config.py". It is expected that you have both a certificate and corresponding private key for your VM that will be used to create the TLS connection with the client.
@@ -37,3 +44,31 @@ The coordinating server can simply be run as follows:
 sudo python server.py
 ```
 Running as root is necessary to access the certificate and private key files. However, once configured (and before listening for connections), the server will drop root privileges.
+
+
+## Starting the Edge Server
+Before starting the edge server, you should fill out `streamserver.py` with the appropriate authentication key defined in your `config.py` for your cloud server. 
+
+Additionally, you must download the Gaming-Anywhere precompiled binaries for Windows x86, located here: http://gaminganywhere.org/dl/gaminganywhere-0.8.0-bin.win32.zip
+
+That folder should be extracted to the `stream-server` directory, so that the `gaminganywhere-0.8.0` directory is a subdirectory of `stream-server`.
+
+Additionally, you should configure your firewall to allow through ports 55555, 8554, and 8555. 
+
+Finally, alter one of the included `server.*.conf` files to correspond to the game you want to play.
+
+TODO: Have a nice powershell script that will configure the entire thing for you.
+
+Then, you can run the stream server by simply typing:
+```
+python ./streamserver.py
+```
+This server will automatically send updates to the cloud, as well as listen for incoming gaming connections.
+
+## Starting the Client
+The client can be run on either Windows or Linux, though Windows requires the Linux Subsystem to be installed. Gaming anywhere should be downloaded and extracted, and the `client.py` file should be placed within the `bin` directory. Then, just proceed as follows:
+  1. Open Linux Subsystem for Windows (or a Terminal if on Linux)
+  2. Use the command `openssl s_client -connect CLOUD_HOST:CLOUD_PORT` to open a connection to the stream server.
+  3. Login or register to obtain an IP of an edge device ready for streaming.
+  4. Using that IP, open a connection to the streaming server: `python client.py STREAMING_IP STREAMING_PORT`.
+  5. Play your game and enjoy! The client will inform the server when the connection has been killed, and the streaming server will automatically kill the game and prepare for more connections.

@@ -70,18 +70,26 @@ class ListenServer(object):
                                     stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             game.wait()
             _, err = game.communicate()
-            err = re.findall(r"pid=(\d{5})", str(err))
-            if len(err) > 0:
-              self.game_pid = int(err[0])
-              print("Game PID: " + err[0])
+            ferr = re.findall(r"pid=(\d{5})", str(err))
+            if len(ferr) > 0:
+              self.game_pid = int(ferr[0])
+              print("Game PID: " + ferr[0])
               self.currently_playing = True
+              time.sleep(10)
               self.sock.sendto(b"OK", addr)
+            else:
+              print(str(err))
+              self.sock.sendto(b"NO", addr)
           else:
             self.sock.sendto(b"NO", addr)
         elif data == bytes(b"STREAMEND"):
           if self.currently_playing and self.game_pid > 1024:
+            print("Killing the game.")
             self.currently_playing = False
-            os.kill(self.game_pid, signal.SIGTERM)
+            try:
+              os.kill(self.game_pid, signal.SIGTERM)
+            except:
+              pass
             self.game_pid = -1
         else:
           print("Wow bad")

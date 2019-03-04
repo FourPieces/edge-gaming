@@ -16,6 +16,17 @@ Before running your server, you should fill out `config.py` as appropriate, and 
 
 The coordinating server is intended to be run on a VM in the cloud.
 
+### Required Packages
+The cloud server relies on some packages being installed beforehand. On a Centos 7 VM image, the following command will install the necessary packages:
+```
+# yum install -y python.x86_64 mysql-server openssl.x86_64 python-pip
+```
+From there you just need to install the mysql connector via pip:
+```
+$ pip install --user mysql-connector-python
+```
+You should now have all the necessary packages installed on your VM to run your coordinating server.
+
 ### Configuring Your Security Group
 The security group should have the following allowed connections:
  - Port 44444 (TCP) should be open to allow client connections  
@@ -47,13 +58,13 @@ Running as root is necessary to access the certificate and private key files. Ho
 
 
 ## Starting the Edge Server
-Before starting the edge server, you should fill out `streamserver.py` with the appropriate authentication key defined in your `config.py` for your cloud server. 
+Before starting the edge server, you should fill out `streamserver.py` with the appropriate authentication key defined in your `config.py` for your cloud server.
 
 Additionally, you must download the Gaming-Anywhere precompiled binaries for Windows x86, located here: http://gaminganywhere.org/dl/gaminganywhere-0.8.0-bin.win32.zip
 
 That folder should be extracted to the `stream-server` directory, so that the `gaminganywhere-0.8.0` directory is a subdirectory of `stream-server`.
 
-Additionally, you should configure your firewall to allow through ports 55555, 8554, and 8555. 
+Additionally, you should configure your firewall to allow through ports 55555, 8554, and 8555.
 
 Finally, alter one of the included `server.*.conf` files to correspond to the game you want to play.
 
@@ -66,7 +77,7 @@ python ./streamserver.py
 This server will automatically send updates to the cloud, as well as listen for incoming gaming connections.
 
 ## Starting the Client
-The client can be run on either Windows or Linux, though Windows requires the Linux Subsystem to be installed. Gaming anywhere should be downloaded and extracted, and the `client.py` file should be placed within the `bin` directory. Then, just proceed as follows:
+The client can be run on either Windows or Linux, though Windows requires the Linux Subsystem to be installed. Gaming anywhere should be downloaded and extracted via the link above, and the `client.py` file should be placed within the `bin` directory. Then, just proceed as follows:
   1. Open Linux Subsystem for Windows (or a Terminal if on Linux)
   2. Use the command `openssl s_client -connect CLOUD_HOST:CLOUD_PORT` to open a connection to the stream server.
   3. Login or register to obtain an IP of an edge device ready for streaming.

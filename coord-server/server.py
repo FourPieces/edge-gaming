@@ -72,7 +72,7 @@ class UpdateServer(AbstractServer):
         ipstr = ".".join(str(int(x)) for x in data_bytes[1:5])
         avail = False
         
-        if data_bytes[5] == bytes("Y"):
+        if data_bytes[5] == 1:
           avail = True
 
         print("Received " + idstr + " and " + ipstr)

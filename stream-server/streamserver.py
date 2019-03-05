@@ -70,17 +70,18 @@ class UpdateClient(object):
     try:
       while True:
         my_ip = bytes(map(int, self.get_ip().split(".")))
-        msg = self.id_num + my_ip
 
-        if not self.play_lock.get_playing():
-          msg += b"Y"
+        if self.play_lock.get_playing():
+          avail = bytes([0])
         else:
-          msg += b"N"
+          avail = bytes([1])
 
+        msg = self.id_num + my_ip + avail
         signature = hmac.new(self.secretkey, msg, digestmod=hashlib.sha256).digest()
 
         self.sock.sendto(msg+signature, (self.host, self.port))
         print("Sent my IP and signature")
+        print(str(len(msg+signature)))
 
         time.sleep(30)
     except:

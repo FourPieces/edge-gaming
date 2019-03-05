@@ -85,13 +85,12 @@ class UpdateServer(AbstractServer):
           continue
 
         curr_time = int(time.time())
-        num_updated = self.db_conn.update("UPDATE edgeservers SET ipaddr = %s, updatetime = %s, available = %s WHERE userid = %s", (ipstr, curr_time, str(int(avail)), idstr))
+        num_updated = self.db_conn.update("UPDATE edgeservers SET ipaddr=%s, updatetime=%s, available=%s WHERE userid=%s", (ipstr, curr_time, int(avail), idstr))
 
         if num_updated > 1:
           raise Exception("Updated more than 1 entry.")
         elif num_updated == 0:
           print("No updates.")
-          
       
     except Exception as e:
       print("Some issue: " + str(e))

@@ -43,9 +43,11 @@ It is intended that MySQL be the DBMS running on the VM. The database on this se
   - `passwordsalt`: a character field to contain a unique salt to be appended to the password for hashing,
   - `hours`: the number of hours a user has left for playing.
 
-`edgeservers` should have two fields:
+`edgeservers` should have four fields:
   - `userid`: a single byte to represent the ID of the edge server
   - `ipaddr`: a character field to contain the IP associated with that edge server
+  - `lastupdated`: an INT(8) field to represent the last UNIX timestamp at which an update was received
+  - `available`: a BIT field to represent whether or not an edge server is currently available
 
 Having a database with those two tables and fields will be enough to properly run the server.
 

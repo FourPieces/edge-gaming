@@ -63,14 +63,20 @@ class UpdateServer(AbstractServer):
         data, _ = self.sock.recvfrom(64)
         data_bytes = bytearray(data.rstrip())
 
-        # 1 byte ID, 4 bytes IP, 32 bytes HMAC
-        if len(data_bytes) != 37:
+        # 1 byte ID, 4 bytes IP, 1 byte Available/Not 32 bytes HMAC
+        if len(data_bytes) != 38:
           print("Bad update received.")
           continue
         
         idstr = str(int(data_bytes[0]))
         ipstr = ".".join(str(int(x)) for x in data_bytes[1:5])
+        avail = False
+        
+        if data_bytes[5] == bytes("Y"):
+          avail = True
+
         print("Received " + idstr + " and " + ipstr)
+        print("Server is available: " + str(avail))
 
         valid = self.validateHMAC(data_bytes)
 
@@ -78,7 +84,8 @@ class UpdateServer(AbstractServer):
           print("Bad MAC received for update.")
           continue
 
-        num_updated = self.db_conn.update("UPDATE edgeservers SET ipaddr = %s WHERE userid = %s", (ipstr, idstr))
+        curr_time = int(time.time())
+        num_updated = self.db_conn.update("UPDATE edgeservers SET ipaddr = %s, updatetime = %s, available = %s WHERE userid = %s", (ipstr, curr_time, str(int(avail)), idstr))
 
         if num_updated > 1:
           raise Exception("Updated more than 1 entry.")
@@ -92,8 +99,8 @@ class UpdateServer(AbstractServer):
       self.sock.close()
 
   def validateHMAC(self, data_bytes):
-    msg = data_bytes[:5]
-    mac = data_bytes[5:]
+    msg = data_bytes[:6]
+    mac = data_bytes[6:]
 
     return hmac.compare_digest(hmac.new(custom_config.Config.hmacsecret(), msg, digestmod=hashlib.sha256).digest(), mac)
     
@@ -182,7 +189,8 @@ class CoordServer(AbstractServer):
   # Obtain a list of servers that have been updated semi-recently
   # Sorted by distance away from the client
   def findClosestServers(self, client_host):
-    data = self.db_conn.query_all("SELECT ipaddr FROM edgeservers", None)
+    lowest_possible_time = int(time.time()) - 300 # Only allow servers that have been updated in the last five minutes
+    data = self.db_conn.query_all("SELECT ipaddr FROM edgeservers WHERE updatetime > %s AND available = 1", (lowest_possible_time,))
 
     (clilat, clilon) = iplocate.get_location_latlon(client_host)
     res = []

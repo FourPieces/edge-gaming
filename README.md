@@ -70,9 +70,11 @@ Additionally, you should configure your firewall to allow through ports 55555, 8
 
 Finally, alter one of the included `server.*.conf` files to correspond to the game you want to play.
 
-TODO: Have a nice powershell script that will configure the entire thing for you.
+*NOTE*: The edge server has only been tested with the game "Stardew Valley," which is a proprietary game. The example config file `server.stardew.conf` has been included. Should you wish to play this game, you should modify the `game-exe` parameter in that file to point to your own installation of Stardew Valley. Then, you can place that file in the `gaminganywhere-0.8.0/bin/config` directory in order to make it playable.
 
-Then, you can run the stream server by simply typing:
+If you would like to play a different game, follow the config file format in order to choose which game/application to execute. Be sure to modify line 129 in `streamserver.py` to correspond to your created configuration file.
+
+After configuration is complete, you can run the stream server by simply typing:
 ```
 python ./streamserver.py
 ```

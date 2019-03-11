@@ -89,5 +89,10 @@ The client can be run on either Windows or Linux, though Windows requires the Li
   1. Open Linux Subsystem for Windows (or a Terminal if on Linux)
   2. Use the command `openssl s_client -connect CLOUD_HOST:CLOUD_PORT` to open a connection to the stream server.
   3. Login or register to obtain an IP of an edge device ready for streaming.
-  4. Using that IP, open a connection to the streaming server: `python client.py STREAMING_IP STREAMING_PORT`.
+  4. Using that IP, open a connection to the streaming server: `python client.py STREAMING_IP STREAMING_PORT`. The default streaming port is 55555.
   5. Play your game and enjoy! The client will inform the server when the connection has been killed, and the streaming server will automatically kill the game and prepare for more connections.
+
+If you'd like to instead run the test application rather than a game, you can add a parameter to the client execution:
+```
+python client.py STREAMING_IP STREAMING_PORT test
+```

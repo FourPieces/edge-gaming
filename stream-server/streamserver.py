@@ -122,12 +122,18 @@ class ListenServer(object):
             self.sock.sendto(b"OK", addr)
           else:
             self.sock.sendto(b"NO", addr)
-        elif data == bytes(b"STREAMREQ"):
+        elif data == bytes(b"STREAMREQ") or data == bytes(b"STREAMTST"):
           if not self.play_lock.get_playing():
             curr_dir = os.path.abspath(os.path.dirname(sys.argv[0]))
-            game = subprocess.Popen([curr_dir + '/gaminganywhere-0.8.0/bin/ga-server-event-driven',
-                                    curr_dir + '/gaminganywhere-0.8.0/bin/config/server.stardew.conf'],
-                                    stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            game = None
+            if data == bytes(b"STREAMREQ"):
+              game = subprocess.Popen([curr_dir + '/gaminganywhere-0.8.0/bin/ga-server-event-driven',
+                                       curr_dir + '/gaminganywhere-0.8.0/bin/config/server.stardew.conf'],
+                                       stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            else: # Test application
+              game = subprocess.Popen([curr_dir + '/gaminganywhere-0.8.0/bin/ga-server-event-driven',
+                                       curr_dir + '/gaminganywhere-0.8.0/bin/config/server.d3dex.conf'],
+                                       stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             game.wait()
             _, err = game.communicate()
             ferr = re.findall(r"pid=(\d{4,5})", str(err))

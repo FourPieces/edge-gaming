@@ -70,8 +70,6 @@ Additionally, you should configure your firewall to allow through ports 55555, 8
 
 Finally, alter one of the included `server.*.conf` files to correspond to the game you want to play.
 
-*NOTE*: The edge server has only been tested with the game "Stardew Valley," which is a proprietary game. The example config file `server.stardew.conf` has been included. Should you wish to play this game, you should modify the `game-exe` parameter in that file to point to your own installation of Stardew Valley. Then, you can place that file in the `gaminganywhere-0.8.0/bin/config` directory in order to make it playable.
-
 If you would like to play a different game, follow the config file format in order to choose which game/application to execute. Be sure to modify line 129 in `streamserver.py` to correspond to your created configuration file.
 
 After configuration is complete, you can run the stream server by simply typing:
@@ -79,6 +77,12 @@ After configuration is complete, you can run the stream server by simply typing:
 python ./streamserver.py
 ```
 This server will automatically send updates to the cloud, as well as listen for incoming gaming connections.
+
+### Testing the Edge Server
+The edge server has only been tested with the game "Stardew Valley," which is a proprietary game. The example config file `server.stardew.conf` has been included. Should you wish to play this game, you should modify the `game-exe` parameter in that file to point to your own installation of Stardew Valley. Then, you can place that file in the `gaminganywhere-0.8.0/bin/config` directory in order to make it playable.
+
+A non-playable (and free!) application has also been used for testing - the d3dex samples. The samples are located here: http://gaminganywhere.org/dl/games/D3D.zip
+In order to test those samples, simply modify the `gaminganywhere-0.8.0/bin/config/server.d3dex.conf` file to point to where the samples are located on your edge server.
 
 ## Starting the Client
 The client can be run on either Windows or Linux, though Windows requires the Linux Subsystem to be installed. Gaming anywhere should be downloaded and extracted via the link above, and the `client.py` file should be placed within the `bin` directory. Then, just proceed as follows:

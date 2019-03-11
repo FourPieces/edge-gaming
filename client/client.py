@@ -5,24 +5,35 @@ import subprocess
 import socket
 
 if __name__ == "__main__":
-  if len(sys.argv) != 3:
-    print("USAGE: python client.py EDGE_IP EDGE_PORT")
+  if len(sys.argv) != 3 and len(sys.argv) != 4:
+    print("USAGE: python client.py EDGE_IP EDGE_PORT [test]")
     sys.exit(0)
   
+  testing = False
+  confpath = './config/client.rel.conf'
+
+  if len(sys.argv) == 4:
+    testing = True
+    confpath = './config/client.abs.conf'
+
   sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
   try:
     sock.settimeout(15)
     edge_ip = sys.argv[1]
     edge_port = int(sys.argv[2])
-    sock.sendto(b"STREAMREQ", (edge_ip, edge_port))
+
+    if not testing:
+      sock.sendto(b"STREAMREQ", (edge_ip, edge_port))
+    else:
+      sock.sendto(b"STREAMTST", (edge_ip, edge_port))
 
     data, addr = sock.recvfrom(16)
 
     if data == bytes(b"OK"):
       print("Starting game.")
       game = subprocess.Popen(['./ga-client',
-                               './config/client.rel.conf',
+                               confpath,
                                'rtsp://' + edge_ip + ":8554/desktop"])
       game.wait()
       print("Finished playing.")

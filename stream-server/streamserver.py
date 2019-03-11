@@ -136,7 +136,7 @@ class ListenServer(object):
                                        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             game.wait()
             _, err = game.communicate()
-            ferr = re.findall(r"pid=(\d{4,5})", str(err))
+            ferr = re.findall(r"pid=(\d{3,5})", str(err))
             if len(ferr) > 0:
               self.game_pid = int(ferr[0])
               print("Game PID: " + ferr[0])

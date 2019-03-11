@@ -10,11 +10,10 @@ if __name__ == "__main__":
     sys.exit(0)
   
   testing = False
-  confpath = './config/client.rel.conf'
+  confpath = './config/client.abs.conf'
 
   if len(sys.argv) == 4:
     testing = True
-    confpath = './config/client.abs.conf'
 
   sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
